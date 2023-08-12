@@ -1,17 +1,23 @@
 package search;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
 public class SearchApp {
     private final Scanner scan = new Scanner(System.in);
     private final String DATA_TYPE = "people";
     private final Set<String> data;
-    private Set<Command> commands;
+    private final Set<Command> commands;
     private boolean isRunning;
+    private final String FILE_NAME;
 
-    public SearchApp() {
+    public SearchApp(String fileName) {
         data = new LinkedHashSet<>();
         commands = new HashSet<>();
+        FILE_NAME = fileName;
 
         commands.add(new AddDataCommand("add"));
         commands.add(new SearchDataCommand("search"));
@@ -22,7 +28,6 @@ public class SearchApp {
     public void run() {
         isRunning = true;
         getCommandByName("add").execute();
-        System.out.println();
 
         while (isRunning) {
             showMenu();
@@ -83,13 +88,17 @@ public class SearchApp {
 
         @Override
         void execute() {
-            System.out.printf("Enter the number of %s:\n", DATA_TYPE);
-            int numOfRecords = Integer.parseInt(scan.nextLine());
+            List<String> fileRows = getFileRows(FILE_NAME);
+            data.addAll(fileRows);
+        }
 
-            System.out.printf("Enter all %s:\n", DATA_TYPE);
-            for (int i = 0; i < numOfRecords; i++) {
-                data.add(scan.nextLine());
+        private List<String> getFileRows(String fileName) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+                return reader.lines().toList();
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
             }
+            return new ArrayList<>();
         }
     }
 
@@ -139,6 +148,7 @@ public class SearchApp {
         void execute() {
             isRunning = false;
             System.out.println("Bye!");
+            scan.close();
         }
     }
 }
