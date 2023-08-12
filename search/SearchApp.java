@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class SearchApp {
     private final Scanner scan = new Scanner(System.in);
@@ -128,13 +130,51 @@ public class SearchApp {
 
         @Override
         void execute() {
-            System.out.printf("Enter data to search %s:\n", DATA_TYPE);
-            String wordToSearch = scan.nextLine();
+            System.out.println("Select a matching strategy: ALL, ANY, NONE");
+            String strategyStr = scan.nextLine().toUpperCase();
+            System.out.printf("\nEnter data to search %s:\n", DATA_TYPE);
+            String wordsToSearch = scan.nextLine();
 
-            if (invertedIndexMap.containsKey(wordToSearch.toLowerCase())) {
-                invertedIndexMap.get(wordToSearch.toLowerCase()).forEach(i -> System.out.println(data.get(i)));
-            } else {
+            Set<String> searchResult = runSearch(strategyStr, wordsToSearch);
+
+            if (searchResult.isEmpty()) {
                 System.out.printf("No matching %s found.\n", DATA_TYPE);
+            } else {
+                System.out.printf("\n%s %s found:\n", searchResult.size(), DATA_TYPE);
+                searchResult.forEach(System.out::println);
+            }
+        }
+
+        private Set<String> runSearch(String strategyStr, String wordsToSearch) {
+            Set<Integer> indexes = new HashSet<>();
+            for (String word : wordsToSearch.toLowerCase().split(" ")) {
+                if (!invertedIndexMap.containsKey(word)) {
+                    continue;
+                }
+                if (indexes.isEmpty()) {
+                    indexes.addAll(invertedIndexMap.get(word));
+                } else {
+                    if ("ALL".equals(strategyStr)) {
+                        Set<Integer> currentIndexes = invertedIndexMap.get(word);
+                        indexes.retainAll(currentIndexes);
+                    } else {
+                        indexes.addAll(invertedIndexMap.get(word));
+                    }
+                }
+            }
+            if ("NONE".equals(strategyStr)) {
+                Set<Integer> allIndexes = IntStream.range(0, data.size())
+                        .boxed()
+                        .collect(Collectors.toSet());
+
+                allIndexes.removeAll(indexes);
+                return allIndexes.stream()
+                        .map(data::get)
+                        .collect(Collectors.toSet());
+            } else {
+                return indexes.stream()
+                        .map(data::get)
+                        .collect(Collectors.toSet());
             }
         }
     }
