@@ -1,7 +1,6 @@
 package search;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
@@ -9,13 +8,15 @@ import java.util.*;
 public class SearchApp {
     private final Scanner scan = new Scanner(System.in);
     private final String DATA_TYPE = "people";
-    private final Set<String> data;
+    private final List<String> data;
+    private final Map<String, Set<Integer>> invertedIndexMap;
     private final Set<Command> commands;
     private boolean isRunning;
     private final String FILE_NAME;
 
     public SearchApp(String fileName) {
-        data = new LinkedHashSet<>();
+        data = new ArrayList<>();
+        invertedIndexMap = new HashMap<>();
         commands = new HashSet<>();
         FILE_NAME = fileName;
 
@@ -28,6 +29,7 @@ public class SearchApp {
     public void run() {
         isRunning = true;
         getCommandByName("add").execute();
+        fillInInvertedIndexMap();
 
         while (isRunning) {
             showMenu();
@@ -41,6 +43,22 @@ public class SearchApp {
                 System.out.println("Incorrect option! Try again.");
             }
             System.out.println();
+        }
+    }
+
+    private void fillInInvertedIndexMap() {
+        for (int i = 0; i < data.size(); i++) {
+            for (String word : data.get(i).split(" ")) {
+                String lowerWord = word.toLowerCase();
+                Set<Integer> values;
+                if (invertedIndexMap.containsKey(lowerWord)) {
+                    values = invertedIndexMap.get(lowerWord);
+                } else {
+                    values = new HashSet<>();
+                }
+                values.add(i);
+                invertedIndexMap.put(lowerWord, values);
+            }
         }
     }
 
@@ -113,14 +131,10 @@ public class SearchApp {
             System.out.printf("Enter data to search %s:\n", DATA_TYPE);
             String wordToSearch = scan.nextLine();
 
-            List<String> foundData = data.stream()
-                    .filter(d -> d.toLowerCase().contains(wordToSearch.toLowerCase()))
-                    .toList();
-
-            if (foundData.isEmpty()) {
-                System.out.printf("No matching %s found.\n", DATA_TYPE);
+            if (invertedIndexMap.containsKey(wordToSearch.toLowerCase())) {
+                invertedIndexMap.get(wordToSearch.toLowerCase()).forEach(i -> System.out.println(data.get(i)));
             } else {
-                foundData.forEach(System.out::println);
+                System.out.printf("No matching %s found.\n", DATA_TYPE);
             }
         }
     }
